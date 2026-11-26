@@ -164,6 +164,21 @@ def _listed_runner_repos(environ, attaches: bool):
     return json.loads(listed) if attaches and listed is not None else None
 
 
+def _odd_instructions_section(script_dir: str) -> str | None:
+    """Load the Automation-owned ODD protocol bundled with this run."""
+    odd_path = os.path.join(script_dir, "ODD.md")
+    if not os.path.isfile(odd_path):
+        return None
+    with open(odd_path, encoding="utf-8") as odd_file:
+        instructions = odd_file.read().strip()
+    if not instructions:
+        return None
+    return (
+        "## OpenHands Development Discipline (ODD) — required workflow\n\n"
+        f"{instructions}"
+    )
+
+
 ATTACHES_TO_STARTED_CONVERSATION = _attaches_to_started_conversation(os.environ)
 
 
@@ -641,8 +656,12 @@ with workspace_ctx as workspace:
     with open(PROMPT_FILE) as f:
         USER_PROMPT = f.read()
 
-    # Build prompt with context sections
+    # Build prompt with context sections. ODD is supplied by Automation itself,
+    # not copied from the target repository, so every project gets the same
+    # development protocol.
     context_sections = []
+    if odd_section := _odd_instructions_section(SCRIPT_DIR):
+        context_sections.append(odd_section)
 
     # Add repos context if repos were cloned
     if repos_context:
