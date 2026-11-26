@@ -28,6 +28,7 @@ from openhands.automation.preset_router import (
     _generate_tarball,
     _get_preset_entrypoint,
     _replace_files_in_tarball,
+    with_current_preset_runner,
     _resolve_experiment_variant_models,
 )
 from openhands.automation.schemas import CONTINUE_CONVERSATION_KEEP_ALIVE_ERROR
@@ -1350,6 +1351,21 @@ class TestGenerateTarball:
             assert "setup.sh" in names
             # Note: load_skills.py and clone_repos.py are no longer needed
             # as the SDK workspace now provides these methods directly
+
+    def test_current_runner_adds_odd_to_existing_prompt_tarballs(self):
+        """Existing prompt automations receive the centrally maintained ODD file."""
+        original = _generate_tarball("Fix the reported issue")
+        legacy = _replace_files_in_tarball(original, {"ODD.md": None})
+        assert legacy is not None
+
+        updated = with_current_preset_runner(legacy)
+
+        with tarfile.open(fileobj=io.BytesIO(updated), mode="r:gz") as tar:
+            odd_file = tar.extractfile("ODD.md")
+            assert odd_file is not None
+            odd_content = odd_file.read().decode("utf-8")
+            assert "Authorize before acting" in odd_content
+            assert "Keep small work small" in odd_content
 
     def test_generate_tarball_prompt_content(self):
         """Generated tarball contains the user's prompt."""
