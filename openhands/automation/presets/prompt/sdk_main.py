@@ -660,8 +660,6 @@ with workspace_ctx as workspace:
     # not copied from the target repository, so every project gets the same
     # development protocol.
     context_sections = []
-    if odd_section := _odd_instructions_section(SCRIPT_DIR):
-        context_sections.append(odd_section)
 
     # Add repos context if repos were cloned
     if repos_context:
@@ -670,6 +668,10 @@ with workspace_ctx as workspace:
         repo_instructions = _repo_instructions_section(loaded_skills)
         if repo_instructions:
             context_sections.append(repo_instructions)
+
+    # Keep the shared workflow guidance after project-specific instructions.
+    if odd_section := _odd_instructions_section(SCRIPT_DIR):
+        context_sections.append(odd_section)
 
     # Add event context if this is an event-triggered run
     if event_context and "event" in event_context:
