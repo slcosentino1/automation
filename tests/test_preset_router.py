@@ -1340,6 +1340,13 @@ class TestGenerateTarball:
             assert "main.py" in names
             assert "finish_tool_hook.py" in names
             assert "prompt.txt" in names
+            assert "ODD.md" in names
+            odd_file = tar.extractfile("ODD.md")
+            assert odd_file is not None
+            odd_content = odd_file.read().decode("utf-8")
+            assert "Authorize" in odd_content
+            assert "Explore" in odd_content
+            assert "Keep small work small" in odd_content
             assert "setup.sh" in names
             # Note: load_skills.py and clone_repos.py are no longer needed
             # as the SDK workspace now provides these methods directly
@@ -1380,6 +1387,8 @@ class TestGenerateTarball:
             assert "get_default_agent" in main_content
             assert "model_copy" in main_content
             assert "prompt.txt" in main_content
+            assert '_odd_instructions_section(SCRIPT_DIR)' in main_content
+            assert '"ODD.md"' in main_content
 
     def test_generate_tarball_setup_sh_executable(self):
         """setup.sh in tarball has executable permissions."""
