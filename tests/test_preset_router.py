@@ -29,6 +29,7 @@ from openhands.automation.preset_router import (
     _get_preset_entrypoint,
     _replace_files_in_tarball,
     _resolve_experiment_variant_models,
+    with_current_preset_runner,
 )
 from openhands.automation.schemas import CONTINUE_CONVERSATION_KEEP_ALIVE_ERROR
 from openhands.sdk.mcp.config import coerce_mcp_config, dump_mcp_config
@@ -1340,9 +1341,31 @@ class TestGenerateTarball:
             assert "main.py" in names
             assert "finish_tool_hook.py" in names
             assert "prompt.txt" in names
+            assert "ODD.md" in names
+            odd_file = tar.extractfile("ODD.md")
+            assert odd_file is not None
+            odd_content = odd_file.read().decode("utf-8")
+            assert "Authorize" in odd_content
+            assert "Explore" in odd_content
+            assert "Keep small work small" in odd_content
             assert "setup.sh" in names
             # Note: load_skills.py and clone_repos.py are no longer needed
             # as the SDK workspace now provides these methods directly
+
+    def test_current_runner_adds_odd_to_existing_prompt_tarballs(self):
+        """Existing prompt automations receive the centrally maintained ODD file."""
+        original = _generate_tarball("Fix the reported issue")
+        legacy = _replace_files_in_tarball(original, {"ODD.md": None})
+        assert legacy is not None
+
+        updated = with_current_preset_runner(legacy)
+
+        with tarfile.open(fileobj=io.BytesIO(updated), mode="r:gz") as tar:
+            odd_file = tar.extractfile("ODD.md")
+            assert odd_file is not None
+            odd_content = odd_file.read().decode("utf-8")
+            assert "Authorize before acting" in odd_content
+            assert "Keep small work small" in odd_content
 
     def test_generate_tarball_prompt_content(self):
         """Generated tarball contains the user's prompt."""
@@ -1380,6 +1403,8 @@ class TestGenerateTarball:
             assert "get_default_agent" in main_content
             assert "model_copy" in main_content
             assert "prompt.txt" in main_content
+            assert '_odd_instructions_section(SCRIPT_DIR)' in main_content
+            assert '"ODD.md"' in main_content
 
     def test_generate_tarball_setup_sh_executable(self):
         """setup.sh in tarball has executable permissions."""
